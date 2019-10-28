@@ -32,17 +32,28 @@ var (
 		0, 0,
 		0, 0, 0, 0,
 	}
+
+	describGroupsResponseFailed = []byte{
+		0, 0, 0, 1, // 1 Group
+		0, 16, // ErrCode 16 = ErrNotCoordinatorForConsumer
+		0, 15, // 15 chars
+		's', 'c', 'h', 'e', 'm', 'a', '-', 'r', 'e', 'g', 'i', 's', 't', 'r', 'y',
+		0, 0, // State is empty because this reesponse is an error
+		0, 0, // Protocol type is also empty
+	}
 )
 
 func TestDescribeGroupsResponse(t *testing.T) {
 	var response *DescribeGroupsResponse
 
+	// 1. Test empty group
 	response = new(DescribeGroupsResponse)
 	testVersionDecodable(t, "empty", response, describeGroupsResponseEmpty, 0)
 	if len(response.Groups) != 0 {
 		t.Error("Expected no groups")
 	}
 
+	// 2. Test populated group
 	response = new(DescribeGroupsResponse)
 	testVersionDecodable(t, "populated", response, describeGroupsResponsePopulated, 0)
 	if len(response.Groups) != 2 {
@@ -87,5 +98,15 @@ func TestDescribeGroupsResponse(t *testing.T) {
 	}
 	if len(group1.Members) != 0 {
 		t.Error("Unxpected groups[1].Members, found", group0.Members)
+	}
+
+	// 3. Test error group response
+	response = new(DescribeGroupsResponse)
+	testVersionDecodable(t, "error group response", response, describGroupsResponseFailed, 0)
+	if len(response.Groups) != 1 {
+		t.Error("Expected exactly one group")
+	}
+	if response.Groups[0].Err != ErrNotCoordinatorForConsumer {
+		t.Error("Expected not coordinator for consumer error")
 	}
 }
